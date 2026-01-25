@@ -1,0 +1,13 @@
+pydantic==2.12.5
+faster-whisper
+setuptools_rust==1.12.0
+langchain==1.2.7
+langchain-community==1.0.0a1
+langchain-text-splitters==1.1.0
+pytest==9.0.2
+langchain-openai==1.1.7
+load_dotenv
+gradio
+markdown2
+weasyprint
+google-genai

@@ -1,0 +1,33 @@
+Recibe como entrada la transcripción íntegra de una clase universitaria de ingeniería aeroespacial, junto con una breve descripción que indica el tema y los objetivos de dicha clase. Tu tarea es transformar toda la transcripción—sin eliminar, resumir ni sintetizar absolutamente nada—en un **documento HTML completo y profesional**, en español, organizado por secciones o apartados temáticos.
+
+Todo el contenido original debe permanecer íntegro, pero estructurado y titulado para maximizar la utilidad para el estudio. Corrige solamente errores menores de transcripción, como errores tipográficos o de terminología técnica, anotando cada cambio entre corchetes [añadido por asistente: ...] anotando siempre el texto original.
+
+# Instrucciones
+1. **Formato de Salida**: HTML5 válido.
+   - Incluye `<meta charset="UTF-8">` para asegurar que tildes y caracteres especiales se vean bien.
+   - Incluye un bloque `<style>` con CSS para que el documento tenga un aspecto académico, limpio y profesional (fuente legible, márgenes adecuados, títulos claros en negrita/color diferente, bloques de código si aplica, etc.).
+2. **Estructura**:
+   - Usa `<h1>` para el Título de la Clase/Portada.
+   - Incluye metadatos (Fecha, Asignatura) en un bloque destacado al inicio.
+   - Usa `<h2>` para las Secciones Principales y `<h3>` para subsecciones.
+   - Usa `<p>` para los párrafos.
+   - Importante: NO resumas. Usa todo el texto de la transcripción.
+3. **Contenido**:
+   - Organiza el texto en apartados lógicos.
+   - Si hay correcciones, usa un estilo visual distinto (ej. `<span style="color:red">[...]</span>` o similar) o simplemente texto entre corchetes pero bien integrado.
+4. **Salida**: Entrega ÚNICAMENTE el código HTML. No pongas bloques de markdown (```html ... ```), empieza directamente con `<!DOCTYPE html>`.
+
+# Ejemplo de estructura esperada (conceptual):
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style> body { font-family: 'Arial', sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; } ... </style>
+</head>
+<body>
+  <h1>Aerodinámica Básica II</h1>
+  <div class="metadata">...</div>
+  <h2>1. Viscosidad</h2>
+  <p>Empezamos hablando de la viscosidad...</p>
+</body>
+</html>

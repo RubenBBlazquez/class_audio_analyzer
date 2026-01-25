@@ -1,0 +1,171 @@
+import sqlite3
+import os
+from typing import Optional
+
+# Compute absolute path to config/audio_analyzer.db based on project structure
+# database_manager.py is in /app/
+# we want /config/audio_analyzer.db
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+DB_NAME = os.path.join(BASE_DIR, "app", "../config", "audio_analyzer.db")
+
+print(f"DEBUG: DB_NAME set to: {DB_NAME}")
+
+def init_db():
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(DB_NAME), exist_ok=True)
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Transcriptions Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS transcriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            audio_filename TEXT NOT NULL,
+            subject_folder TEXT,
+            transcription_file_path TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Summarizations Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS summarizations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transcription_id INTEGER,
+            theme TEXT,
+            objective TEXT,
+            summary_text TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (transcription_id) REFERENCES transcriptions (id)
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+def log_transcription(audio_filename: str, subject_folder: Optional[str], transcription_file_path: str) -> int:
+    """
+    Logs a transcription record and returns its ID.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO transcriptions (audio_filename, subject_folder, transcription_file_path)
+        VALUES (?, ?, ?)
+    ''', (audio_filename, subject_folder, transcription_file_path))
+
+    transcription_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return transcription_id
+
+def log_summarization(transcription_id: int, theme: str, objective: str, summary_text: str) -> int:
+    """
+    Logs a summarization record linked to a transcription.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO summarizations (transcription_id, theme, objective, summary_text)
+        VALUES (?, ?, ?, ?)
+    ''', (transcription_id, theme, objective, summary_text))
+
+    summarization_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return summarization_id
+
+def get_transcription_by_filename(audio_filename: str):
+    """
+    Finds a transcription record by audio filename.
+    Returns the row (id, audio_filename, ...) or None.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM transcriptions WHERE audio_filename = ? ORDER BY created_at DESC LIMIT 1', (audio_filename,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+def get_recent_transcriptions(limit=10):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    # Left join to check for summary existence
+    # Also fetching theme to make selector more descriptive if available
+    cursor.execute('''
+        SELECT t.id, t.audio_filename, t.subject_folder, t.transcription_file_path, t.created_at,
+               s.theme, s.objective
+        FROM transcriptions t
+        LEFT JOIN summarizations s ON t.id = s.transcription_id
+        ORDER BY t.created_at DESC 
+        LIMIT ?
+    ''', (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Return formatted strings for dropdown
+    # Format: "[Date] Subject - Filename (Theme: ...)"
+    formatted = []
+    for row in rows:
+        # row: 0=id, 1=filename, 2=subject, 3=path, 4=date, 5=theme, 6=objective
+        date_str = row[4]
+        filename = row[1]
+        subject = row[2] if row[2] else "General"
+        theme = f" | {row[5]}" if row[5] else ""
+
+        display_str = f"{row[0]}: [{date_str}] {subject} - {filename}{theme}"
+        formatted.append(display_str)
+
+    return formatted, rows
+
+def get_transcription_details(record_str):
+    if not record_str:
+        return None
+    try:
+        record_id = int(record_str.split(":")[0])
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        # Get transcription info
+        cursor.execute("SELECT * FROM transcriptions WHERE id=?", (record_id,))
+        t_row = cursor.fetchone()
+
+        # Get associated summary info (if any)
+        cursor.execute("SELECT * FROM summarizations WHERE transcription_id=? ORDER BY created_at DESC LIMIT 1", (record_id,))
+        s_row = cursor.fetchone()
+
+        conn.close()
+
+        # Structure: (audio_path, subject, theme, objective, summary_text)
+        # Note: audio_path might strictly be the filename stored, we might need to assume location or just fill text fields.
+        # If the file still exists in the upload temp (unlikely) or original path is absolute.
+        # For this feature, we mostly want to recall the context (Subject, Theme, Objective) and maybe the result.
+
+        if t_row:
+            subject = t_row[2] # subject_folder
+            # Attempt to reconstruct audio path if possible, but Gradio Audio input expects a temp file or URL.
+            # We probably can't easily pre-fill the Audio component with a local server path unless allowed.
+            # But we can fill text fields.
+
+            theme = ""
+            objective = ""
+            summary = ""
+            if s_row:
+                theme = s_row[2]
+                objective = s_row[3]
+                summary = s_row[4]
+
+            return subject, theme, objective, summary
+
+    except Exception as e:
+        print(f"Error fetching details: {e}")
+        return None
+
+# Initialize DB on import if not exists
+if not os.path.exists(DB_NAME):
+    init_db()
+else:
+    # Ensure tables exist even if file exists
+    init_db()

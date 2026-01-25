@@ -8,12 +8,13 @@ from app.interface.components.modal import create_modal_component, setup_modal_e
 from app.services.workflow import transcribe_workflow, summarize_workflow
 
 def unified_workflow(current_tab, audio_path, text_path, subject, theme, objective, do_summarize, context_files, summarizer_type):
-    # Dispatch based on active tab
     if current_tab == "audio":
         if audio_path:
             yield from transcribe_workflow(audio_path, subject, theme, objective, do_summarize, context_files, summarizer_type)
         else:
             yield "Error: No audio file provided (Check Audio Source tab).", ""
+
+        return
 
     if current_tab == "text":
         if text_path:

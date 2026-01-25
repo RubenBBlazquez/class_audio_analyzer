@@ -6,7 +6,7 @@ from typing import Optional
 # database_manager.py is in /app/
 # we want /config/audio_analyzer.db
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-DB_NAME = os.path.join(BASE_DIR, "app", "../config", "audio_analyzer.db")
+DB_NAME = os.path.join(BASE_DIR, "app", "config", "audio_analyzer.db")
 
 print(f"DEBUG: DB_NAME set to: {DB_NAME}")
 

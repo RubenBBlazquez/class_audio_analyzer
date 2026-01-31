@@ -7,10 +7,10 @@ from app.interface.components.resume_viewer import create_resume_viewer_componen
 from app.interface.components.modal import create_modal_component, setup_modal_events
 from app.services.workflow import transcribe_workflow, summarize_workflow
 
-def unified_workflow(current_tab, audio_path, text_path, subject, theme, objective, do_summarize, context_files, summarizer_type):
+def unified_workflow(current_tab, audio_path, text_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type):
     if current_tab == "audio":
         if audio_path:
-            yield from transcribe_workflow(audio_path, subject, theme, objective, do_summarize, context_files, summarizer_type)
+            yield from transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type)
         else:
             yield "Error: No audio file provided (Check Audio Source tab).", ""
 
@@ -18,7 +18,7 @@ def unified_workflow(current_tab, audio_path, text_path, subject, theme, objecti
 
     if current_tab == "text":
         if text_path:
-            yield from summarize_workflow(text_path, theme, objective, context_files, summarizer_type)
+            yield from summarize_workflow(text_path, theme, objective, mandatory_rules, context_files, summarizer_type)
         else:
              yield "Error: No text file provided (Check Text Source tab).", ""
 
@@ -37,7 +37,7 @@ def create_interface():
             # Left Column: Inputs
             with gr.Column():
                 (active_tab, audio_input, subject_input, text_file_input,
-                 theme_input, objective_input, context_files_input,
+                 theme_input, objective_input, mandatory_rules_input, context_files_input,
                  summarizer_selector, auto_summarize, action_btn, stop_btn) = create_input_components()
 
             # Right Column: Results & Resume Viewer
@@ -62,7 +62,7 @@ def create_interface():
         # Workflow
         process_event = action_btn.click(
             fn=unified_workflow,
-            inputs=[active_tab, audio_input, text_file_input, subject_input, theme_input, objective_input, auto_summarize,
+            inputs=[active_tab, audio_input, text_file_input, subject_input, theme_input, objective_input, mandatory_rules_input, auto_summarize,
                     context_files_input, summarizer_selector],
             outputs=[log_output, summary_output]
         )

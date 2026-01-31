@@ -10,6 +10,7 @@ from .base_summarizer import SummarizerStrategy
 class OpenAIStrategy(SummarizerStrategy):
     theme: str
     objective: str
+    mandatory_rules: Optional[str] = None
     context_files: Optional[List[str]] = None
     client: Optional[Any] = None
     assistant_id: str = "asst_hBlXzak1TOaNVM0wZdNP4rcB"
@@ -61,6 +62,9 @@ class OpenAIStrategy(SummarizerStrategy):
         yield "log", msg
 
         content = f'- Tema/clase: "{self.theme}" - Objetivo: "{self.objective}":'
+        if self.mandatory_rules:
+            content += f'\n- Reglas OBLIGATORIAS: {self.mandatory_rules}'
+
         content += " Genera un archivo PDF con el resumen estructurado y detallado para descargar."
 
         self.client.beta.threads.messages.create(
@@ -174,26 +178,11 @@ class OpenAIStrategy(SummarizerStrategy):
         resumes_dir = os.path.join(subject_dir, "resumes")
 
         if not self._is_transcription_and_summarize_process:
-            # If not automated process, maybe put somewhere else or standard resumes folder?
-            # Keeping original logic but allowing override
-            # Actually original code had logic to change folder if manual?
-            # Let's keep existing logic from text_summarizer.py
-            # Wait, the logic in attached file was:
-            # resumes_dir = os.path.join("transcriptions", "other_resumes", self.theme.replace(" ", "_"))
-            # if not self._is_transcription_and_summarize_process
-            pass
-
-        # Re-reading provided text_summarizer logic carefully
-        # It seems the provided file has:
-        if not self._is_transcription_and_summarize_process:
-             resumes_dir = os.path.join(
-                "transcriptions",
-                "other_resumes",
-                self.theme.replace(" ", "_")
-            )
-
-        # But wait, subject_dir is based on file_path.
-        # If file_path is manual upload, it might be in /tmp or something.
+             project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+             safe_theme = self.theme.replace(" ", "_") if self.theme else "General"
+             resumes_dir = os.path.join(project_root, "transcriptions", "other_resumes", safe_theme)
 
         os.makedirs(resumes_dir, exist_ok=True)
         return os.path.join(resumes_dir, filename)
+
+

@@ -5,7 +5,7 @@ from app.summarizer_strategy.openai_summarizer import OpenAIStrategy
 from app.summarizer_strategy.gemini_summarizer import GeminiStrategy
 from app.utils.formatting import format_log_message
 
-def transcribe_workflow(audio_path, subject, theme, objective, do_summarize, context_files, summarizer_type):
+def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type):
     if not audio_path:
         print("Error: No audio file provided.")
         yield "Error: No audio file provided.", ""
@@ -83,9 +83,9 @@ def transcribe_workflow(audio_path, subject, theme, objective, do_summarize, con
         context_paths = [f.name for f in context_files] if context_files else None
 
         if summarizer_type == "Gemini Pro":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, context_files=context_paths)
+            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
         else:
-            summarizer = OpenAIStrategy(theme=theme, objective=objective, context_files=context_paths)
+            summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
 
         summarizer.set_is_transcription_and_sumerize_process(True)
         gen = summarizer.summarize_with_logs(final_path)
@@ -118,7 +118,7 @@ def transcribe_workflow(audio_path, subject, theme, objective, do_summarize, con
         yield "\n".join(status_log), ""
 
 
-def summarize_workflow(file_path, theme, objective, context_files, summarizer_type):
+def summarize_workflow(file_path, theme, objective, mandatory_rules, context_files, summarizer_type):
     if not file_path:
         yield "Error: No text file provided.", ""
         return
@@ -135,9 +135,9 @@ def summarize_workflow(file_path, theme, objective, context_files, summarizer_ty
         context_paths = [f.name for f in context_files] if context_files else None
 
         if summarizer_type == "Gemini Pro":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, context_files=context_paths)
+            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
         else:
-            summarizer = OpenAIStrategy(theme=theme, objective=objective, context_files=context_paths)
+            summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
 
         summarizer.set_is_transcription_and_sumerize_process(False)
 

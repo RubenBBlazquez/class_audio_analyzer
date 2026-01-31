@@ -17,6 +17,7 @@ def create_input_components():
             gr.Markdown("### Summarization Context")
             theme_input = gr.Textbox(label="Theme/Class Name", placeholder="e.g. Aerodinámica básica II")
             objective_input = gr.Textbox(label="Objective/Context", placeholder="e.g. Entender viscosidad...")
+            mandatory_rules_input = gr.Textbox(label="Mandatory Rules", placeholder="e.g. The teacher has an accent, ignore 'uhm'...", lines=2)
 
             # Wrapper for context files and strategy selector
             with gr.Row():
@@ -41,5 +42,5 @@ def create_input_components():
     text_tab.select(fn=lambda: "text", outputs=active_tab)
 
     return (active_tab, audio_input, subject_input, text_file_input,
-            theme_input, objective_input, context_files_input,
+            theme_input, objective_input, mandatory_rules_input, context_files_input,
             summarizer_selector, auto_summarize, action_btn, stop_btn)

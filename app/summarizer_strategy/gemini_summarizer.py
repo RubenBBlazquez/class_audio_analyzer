@@ -9,6 +9,7 @@ from .base_summarizer import SummarizerStrategy
 class GeminiStrategy(SummarizerStrategy):
     theme: str
     objective: str
+    mandatory_rules: Optional[str] = None
     context_files: Optional[List[str]] = None
     _is_transcription_and_summarize_process = False
 
@@ -82,7 +83,12 @@ class GeminiStrategy(SummarizerStrategy):
         Input de la tarea:
         Tema: {self.theme}
         Objetivo: {self.objective}
-        
+        """
+
+        if self.mandatory_rules:
+            prompt += f"\nReglas OBLIGATORIAS: {self.mandatory_rules}\n"
+
+        prompt += f"""
         Transcripción a procesar:
         {transcription_text}
         """
@@ -149,4 +155,3 @@ class GeminiStrategy(SummarizerStrategy):
 
         os.makedirs(resumes_dir, exist_ok=True)
         return os.path.join(resumes_dir, filename)
-

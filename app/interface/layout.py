@@ -57,7 +57,7 @@ def create_interface():
 
         # History
         setup_history_events(app, history_dropdown, refresh_history_btn,
-                             [subject_input, theme_input, objective_input, summary_output])
+                             [subject_input, theme_input, objective_input, mandatory_rules_input, summary_output])
 
         # Workflow
         process_event = action_btn.click(

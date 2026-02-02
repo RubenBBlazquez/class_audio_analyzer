@@ -11,6 +11,7 @@ class GeminiStrategy(SummarizerStrategy):
     objective: str
     mandatory_rules: Optional[str] = None
     context_files: Optional[List[str]] = None
+    model_name: str = "models/gemini-2.5-pro"
     _is_transcription_and_summarize_process = False
 
     def __post_init__(self):
@@ -103,11 +104,11 @@ class GeminiStrategy(SummarizerStrategy):
                     except:
                         pass
 
-        yield "log", "Sending request to Gemini Pro..."
+        yield "log", f"Sending request to {self.model_name}..."
 
         try:
             response = self.client.models.generate_content(
-                model='gemini-3-pro-preview',
+                model=self.model_name,
                 contents=prompt
             )
             html_content = response.text

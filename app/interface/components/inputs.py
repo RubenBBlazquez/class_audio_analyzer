@@ -24,7 +24,7 @@ def create_input_components():
                 context_files_input = gr.File(label="Context Files (Optional)", file_count="multiple", scale=3)
                 with gr.Column(elem_classes="strategy-selector-container", scale=1):
                     summarizer_selector = gr.Dropdown(
-                        choices=["OpenAI Assistant", "Gemini Pro"],
+                        choices=["OpenAI Assistant", "Gemini Pro 3", "Gemini Flash 3"],
                         value="OpenAI Assistant",
                         label="Summarizer Strategy",
                         interactive=True

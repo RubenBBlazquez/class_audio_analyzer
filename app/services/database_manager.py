@@ -34,11 +34,18 @@ def init_db():
             transcription_id INTEGER,
             theme TEXT,
             objective TEXT,
+            mandatory_rules TEXT,
             summary_text TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (transcription_id) REFERENCES transcriptions (id)
         )
     ''')
+
+    # Check if mandatory_rules column exists (for migration)
+    cursor.execute("PRAGMA table_info(summarizations)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'mandatory_rules' not in columns:
+        cursor.execute('ALTER TABLE summarizations ADD COLUMN mandatory_rules TEXT')
 
     conn.commit()
     conn.close()
@@ -60,7 +67,7 @@ def log_transcription(audio_filename: str, subject_folder: Optional[str], transc
     conn.close()
     return transcription_id
 
-def log_summarization(transcription_id: int, theme: str, objective: str, summary_text: str) -> int:
+def log_summarization(transcription_id: int, theme: str, objective: str, summary_text: str, mandatory_rules: str = None) -> int:
     """
     Logs a summarization record linked to a transcription.
     """
@@ -68,9 +75,9 @@ def log_summarization(transcription_id: int, theme: str, objective: str, summary
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO summarizations (transcription_id, theme, objective, summary_text)
-        VALUES (?, ?, ?, ?)
-    ''', (transcription_id, theme, objective, summary_text))
+        INSERT INTO summarizations (transcription_id, theme, objective, summary_text, mandatory_rules)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (transcription_id, theme, objective, summary_text, mandatory_rules))
 
     summarization_id = cursor.lastrowid
     conn.commit()
@@ -96,7 +103,7 @@ def get_recent_transcriptions(limit=10):
     # Also fetching theme to make selector more descriptive if available
     cursor.execute('''
         SELECT t.id, t.audio_filename, t.subject_folder, t.transcription_file_path, t.created_at,
-               s.theme, s.objective
+               s.theme, s.objective, s.mandatory_rules
         FROM transcriptions t
         LEFT JOIN summarizations s ON t.id = s.transcription_id
         ORDER BY t.created_at DESC 
@@ -109,7 +116,7 @@ def get_recent_transcriptions(limit=10):
     # Format: "[Date] Subject - Filename (Theme: ...)"
     formatted = []
     for row in rows:
-        # row: 0=id, 1=filename, 2=subject, 3=path, 4=date, 5=theme, 6=objective
+        # row: 0=id, 1=filename, 2=subject, 3=path, 4=date, 5=theme, 6=objective, 7=mandatory_rules
         date_str = row[4]
         filename = row[1]
         subject = row[2] if row[2] else "General"
@@ -152,12 +159,29 @@ def get_transcription_details(record_str):
             theme = ""
             objective = ""
             summary = ""
+            mandatory_rules = ""
             if s_row:
-                theme = s_row[2]
-                objective = s_row[3]
-                summary = s_row[4]
+                # s_row structure is id, transcription_id, theme, objective, mandatory_rules, summary_text, created_at
+                # But wait, I changed the CREATE TABLE, but s_row depends on SELECT *
+                # Since I'm doing SELECT *, I should rely on column names or specific indices matching the table schema.
+                # However, if existing rows don't have mandatory_rules, retrieving them might be tricky if I rely on indices and the order changed or if using row_factory.
+                # SQLite usually appends new columns at the end when using ALTER TABLE.
+                # So existing columns indices are preserved. mandatory_rules will be at the end (before or after existing cols depending on when I added it relative to others?)
+                # Actually, I added it in CREATE TABLE between objective and summary_text, but ALTER TABLE adds to the end.
+                # So for new table: id, t_id, theme, obj, mandatory, summary, created
+                # For altered table: id, t_id, theme, obj, summary, created, mandatory
 
-            return subject, theme, objective, summary
+                # To be safe, I should select by name or handle indices carefully.
+                # Let's check column names.
+                columns = [description[0] for description in cursor.description]
+                s_dict = dict(zip(columns, s_row))
+
+                theme = s_dict.get('theme', "")
+                objective = s_dict.get('objective', "")
+                summary = s_dict.get('summary_text', "")
+                mandatory_rules = s_dict.get('mandatory_rules', "")
+
+            return subject, theme, objective, mandatory_rules, summary
 
     except Exception as e:
         print(f"Error fetching details: {e}")

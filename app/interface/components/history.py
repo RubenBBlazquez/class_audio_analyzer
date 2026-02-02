@@ -8,14 +8,14 @@ def load_history():
 
 def populate_from_history(selected_record):
     if not selected_record:
-        return "", "", "", ""
+        return "", "", "", "", ""
 
     details = database_manager.get_transcription_details(selected_record)
 
     if details:
-        return details  # subject, theme, objective, summary_text
+        return details  # subject, theme, objective, mandatory_rules, summary_text
 
-    return "", "", "", ""
+    return "", "", "", "", ""
 
 def create_history_component():
     with gr.Row(variant="panel", elem_classes="history-container"):

@@ -79,11 +79,12 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
     yield "\n".join(status_log), ""
 
     try:
-        # Strategy selection
         context_paths = [f.name for f in context_files] if context_files else None
 
         if summarizer_type == "Gemini Pro":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
+            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-pro")
+        elif summarizer_type == "Gemini Flash":
+             summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-flash")
         else:
             summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
 
@@ -104,11 +105,16 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
         status_log.append(comp_msg)
         yield "\n".join(status_log), summary_result
 
-        if transcription_id:
-             database_manager.log_summarization(transcription_id, theme, objective, summary_result)
+        if transcription_id and not summary_result.startswith("Error"):
+             database_manager.log_summarization(transcription_id, theme, objective, summary_result, mandatory_rules)
              db_sum_msg = "Summarization logged to DB."
              print(db_sum_msg)
              status_log.append(db_sum_msg)
+             yield "\n".join(status_log), summary_result
+        elif summary_result.startswith("Error"):
+             warn_msg = "Summarization failed. Skipping DB log."
+             print(warn_msg)
+             status_log.append(warn_msg)
              yield "\n".join(status_log), summary_result
 
     except Exception as e:
@@ -134,8 +140,10 @@ def summarize_workflow(file_path, theme, objective, mandatory_rules, context_fil
         # Strategy selection
         context_paths = [f.name for f in context_files] if context_files else None
 
-        if summarizer_type == "Gemini Pro":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
+        if summarizer_type == "Gemini Pro 3":
+            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-pro")
+        elif summarizer_type == "Gemini Flash 3":
+             summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-flash")
         else:
             summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
 
@@ -161,6 +169,11 @@ def summarize_workflow(file_path, theme, objective, mandatory_rules, context_fil
         yield "\n".join(status_log), ""
         return
 
+    if summary_text.startswith("Error"):
+        status_log.append("Summarization failed. Skipping DB log.")
+        yield "\n".join(status_log), summary_text
+        return
+
     try:
         filename = os.path.basename(input_path)
         existing_row = database_manager.get_transcription_by_filename(filename)
@@ -173,7 +186,7 @@ def summarize_workflow(file_path, theme, objective, mandatory_rules, context_fil
             transcription_id = database_manager.log_transcription(filename, subject_to_log, input_path)
             status_log.append(f"Created new transcription record ID: {transcription_id}")
 
-        database_manager.log_summarization(transcription_id, theme, objective, summary_text)
+        database_manager.log_summarization(transcription_id, theme, objective, summary_text, mandatory_rules)
 
         db_msg = "Summarization logged to DB."
         status_log.append(db_msg)

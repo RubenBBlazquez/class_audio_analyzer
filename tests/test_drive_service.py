@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import MagicMock, patch
 from app.services.drive_service import DriveService
@@ -38,8 +39,15 @@ class TestDriveService:
     @patch("app.services.drive_service.service_account.Credentials")
     @patch("app.services.drive_service.build")
     def test_authenticate_success(self, mock_build, mock_creds, mock_exists, mock_env_vars):
-        """Test successful authentication."""
-        mock_exists.return_value = True
+        """Test successful authentication falling back to Service Account."""
+
+        # Configure os.path.exists to return False for user token/secrets, True for service account
+        def side_effect(path):
+            if "token.json" in str(path) or "client_secrets" in str(path):
+                return False
+            return True
+        mock_exists.side_effect = side_effect
+
         service = DriveService()
 
         # Mock credentials and build return
@@ -65,9 +73,15 @@ class TestDriveService:
 
     @patch("app.services.drive_service.os.path.exists")
     @patch("app.services.drive_service.service_account.Credentials")
-    def test_authenticate_exception(self, mock_creds, mock_exists, mock_env_vars):
+    @patch("app.services.drive_service.build")
+    def test_authenticate_exception(self, mock_build, mock_creds, mock_exists, mock_env_vars):
         """Test authentication handling exceptions."""
-        mock_exists.return_value = True
+        def side_effect(path):
+            if "token.json" in str(path) or "client_secrets" in str(path):
+                return False
+            return True
+        mock_exists.side_effect = side_effect
+
         service = DriveService()
 
         mock_creds.from_service_account_file.side_effect = Exception("Credentials error")
@@ -104,14 +118,20 @@ class TestDriveService:
         assert kwargs['body']['parents'] == ["test_folder_id"]
 
     @patch("app.services.drive_service.os.path.exists")
-    def test_upload_file_disabled(self, mock_exists):
-        """Test upload when disabled."""
+    @patch("app.services.drive_service.DriveService.authenticate") # Mock authenticate method directly
+    def test_upload_file_disabled(self, mock_authenticate, mock_exists):
+        """Test upload when disabled/auth fails."""
         mock_exists.return_value = False
         service = DriveService()
 
+        # When disabled, authenticate returns False (or logic inside upload checks service)
+        # Actually in new code: if not self.service: if not self.authenticate(): return None, "msg"
+        mock_authenticate.return_value = False
+
         link, error = service.upload_file("file.txt")
         assert link is None
-        assert "Drive sync disabled" in error
+        # Check actual error message from new implementation
+        assert "Drive authentication failed" in error
 
     @patch("app.services.drive_service.os.path.exists")
     def test_upload_file_auth_failure(self, mock_exists, mock_env_vars):

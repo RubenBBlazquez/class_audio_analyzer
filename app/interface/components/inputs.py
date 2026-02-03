@@ -12,6 +12,7 @@ def create_input_components():
 
         with gr.Tab("Text Source (Summarize Only)") as text_tab:
             text_file_input = gr.File(label="Upload Transcription Text File", file_types=[".txt"])
+            manual_drive_input = gr.Textbox(label="Destination Folder Name", placeholder="Paste Folder Name - Affects Local Storage Folder & Drive Upload", visible=True)
 
         with gr.Group():
             gr.Markdown("### Summarization Context")
@@ -43,4 +44,4 @@ def create_input_components():
 
     return (active_tab, audio_input, subject_input, text_file_input,
             theme_input, objective_input, mandatory_rules_input, context_files_input,
-            summarizer_selector, auto_summarize, action_btn, stop_btn)
+            summarizer_selector, auto_summarize, action_btn, stop_btn, manual_drive_input)

@@ -4,8 +4,9 @@ from app.services.audio_transcriber import AudioTranscriber
 from app.summarizer_strategy.openai_summarizer import OpenAIStrategy
 from app.summarizer_strategy.gemini_summarizer import GeminiStrategy
 from app.utils.formatting import format_log_message
+from app.services.drive_service import DriveService
 
-def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type):
+def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type, drive_folder_id=None):
     if not audio_path:
         print("Error: No audio file provided.")
         yield "Error: No audio file provided.", ""
@@ -60,8 +61,33 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
         print(db_msg)
         status_log.append(db_msg)
         yield "\n".join(status_log), ""
+
+        # Let's use 'subject' as the subfolder_name.
+        drive_service = DriveService()
+        if drive_service.enabled:
+             yield "\n".join(status_log + ["Uploading transcription to Drive..."]), ""
+
+             effective_subfolder = subject.strip() if subject else (theme.strip() if theme else "General")
+             drive_link, error = drive_service.upload_file(
+                 final_path,
+                 custom_folder_id=drive_folder_id,
+                 subfolder_name=effective_subfolder,
+                 fixed_subfolder="transcriptions"
+             )
+
+             if error:
+                 warn_msg = f"Drive Upload Warning (Tx): {error}"
+                 print(warn_msg)
+                 status_log.append(warn_msg)
+             else:
+                 msg = f"Transcription uploaded to Drive: {drive_link}"
+                 print(msg)
+                 status_log.append(msg)
+             yield "\n".join(status_log), ""
+        # -------------------------------------------------------
+
     except Exception as e:
-        warn_msg = f"DB Warning: {str(e)}"
+        warn_msg = f"DB/Drive Warning: {str(e)}"
         print(warn_msg)
         status_log.append(warn_msg)
         yield "\n".join(status_log), ""
@@ -82,11 +108,31 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
         context_paths = [f.name for f in context_files] if context_files else None
 
         if summarizer_type == "Gemini Pro 3":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-pro")
+            summarizer = GeminiStrategy(
+                theme=theme,
+                objective=objective,
+                mandatory_rules=mandatory_rules,
+                context_files=context_paths,
+                drive_custom_folder_id=drive_folder_id,
+                model_name="models/gemini-2.5-pro"
+            )
         elif summarizer_type == "Gemini Flash 3":
-             summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-flash")
+             summarizer = GeminiStrategy(
+                 theme=theme,
+                 objective=objective,
+                 mandatory_rules=mandatory_rules,
+                 context_files=context_paths,
+                 drive_custom_folder_id=drive_folder_id,
+                 model_name="models/gemini-2.5-flash"
+             )
         else:
-            summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
+            summarizer = OpenAIStrategy(
+                theme=theme,
+                objective=objective,
+                mandatory_rules=mandatory_rules,
+                context_files=context_paths,
+                drive_custom_folder_id=drive_folder_id
+            )
 
         summarizer.set_is_transcription_and_sumerize_process(True)
         gen = summarizer.summarize_with_logs(final_path)
@@ -124,7 +170,7 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
         yield "\n".join(status_log), ""
 
 
-def summarize_workflow(file_path, theme, objective, mandatory_rules, context_files, summarizer_type):
+def summarize_workflow(file_path, theme, objective, mandatory_rules, context_files, summarizer_type, drive_folder_id=None):
     if not file_path:
         yield "Error: No text file provided.", ""
         return
@@ -141,11 +187,31 @@ def summarize_workflow(file_path, theme, objective, mandatory_rules, context_fil
         context_paths = [f.name for f in context_files] if context_files else None
 
         if summarizer_type == "Gemini Pro 3":
-            summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-pro")
+            summarizer = GeminiStrategy(
+                theme=theme,
+                objective=objective,
+                mandatory_rules=mandatory_rules,
+                context_files=context_paths,
+                drive_custom_folder_id=drive_folder_id,
+                model_name="models/gemini-2.5-pro"
+            )
         elif summarizer_type == "Gemini Flash 3":
-             summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-flash")
+             summarizer = GeminiStrategy(
+                 theme=theme,
+                 objective=objective,
+                 mandatory_rules=mandatory_rules,
+                 context_files=context_paths,
+                 drive_custom_folder_id=drive_folder_id,
+                 model_name="models/gemini-2.5-flash"
+             )
         else:
-            summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)
+            summarizer = OpenAIStrategy(
+                theme=theme,
+                objective=objective,
+                mandatory_rules=mandatory_rules,
+                context_files=context_paths,
+                drive_custom_folder_id=drive_folder_id
+            )
 
         summarizer.set_is_transcription_and_sumerize_process(False)
 

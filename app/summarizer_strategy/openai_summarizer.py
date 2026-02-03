@@ -5,6 +5,7 @@ import os
 from openai import OpenAI
 import time
 from .base_summarizer import SummarizerStrategy
+from app.services.drive_service import DriveService
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class OpenAIStrategy(SummarizerStrategy):
@@ -12,6 +13,7 @@ class OpenAIStrategy(SummarizerStrategy):
     objective: str
     mandatory_rules: Optional[str] = None
     context_files: Optional[List[str]] = None
+    drive_custom_folder_id: Optional[str] = None
     client: Optional[Any] = None
     assistant_id: str = "asst_hBlXzak1TOaNVM0wZdNP4rcB"
     _is_transcription_and_summarize_process = False
@@ -160,6 +162,23 @@ class OpenAIStrategy(SummarizerStrategy):
             with open(target_path, "wb") as f_out:
                 f_out.write(file_content.read())
             yield "log", f"Saved file to: {target_path}"
+
+            # --- GOOGLE DRIVE UPLOAD INTEGRATION ---
+            drive_service = DriveService()
+            if drive_service.enabled:
+                yield "log", "Uploading to Google Drive..."
+                drive_link, error = drive_service.upload_file(
+                    target_path,
+                    custom_folder_id=self.drive_custom_folder_id,
+                    subfolder_name=self.theme,
+                    fixed_subfolder="resumes"
+                )
+                if error:
+                    yield "log", f"Drive Upload Warning: {error}"
+                else:
+                    yield "log", f"Uploaded to Drive: {drive_link}"
+            # ---------------------------------------
+
         except Exception as e:
             yield "log", f"Error downloading file {file_id}: {e}"
 
@@ -179,10 +198,17 @@ class OpenAIStrategy(SummarizerStrategy):
 
         if not self._is_transcription_and_summarize_process:
              project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-             safe_theme = self.theme.replace(" ", "_") if self.theme else "General"
-             resumes_dir = os.path.join(project_root, "transcriptions", "other_resumes", safe_theme)
+
+             if self.drive_custom_folder_id:
+                 resumes_dir = os.path.join(
+                    project_root,
+                    "transcriptions",
+                    self.drive_custom_folder_id,
+                    "resumes"
+                 )
+             else:
+                 safe_theme = self.theme.replace(" ", "_") if self.theme else "General"
+                 resumes_dir = os.path.join(project_root, "transcriptions", "other_resumes", safe_theme)
 
         os.makedirs(resumes_dir, exist_ok=True)
         return os.path.join(resumes_dir, filename)
-
-

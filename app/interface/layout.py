@@ -7,10 +7,11 @@ from app.interface.components.resume_viewer import create_resume_viewer_componen
 from app.interface.components.modal import create_modal_component, setup_modal_events
 from app.services.workflow import transcribe_workflow, summarize_workflow
 
-def unified_workflow(current_tab, audio_path, text_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type):
+def unified_workflow(current_tab, audio_path, text_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type, manual_drive_id=None):
     if current_tab == "audio":
         if audio_path:
-            yield from transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type)
+            # Pass None for drive_folder_id to enforce unified process rules (not showing/using the manual override)
+            yield from transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, do_summarize, context_files, summarizer_type, drive_folder_id=None)
         else:
             yield "Error: No audio file provided (Check Audio Source tab).", ""
 
@@ -18,7 +19,8 @@ def unified_workflow(current_tab, audio_path, text_path, subject, theme, objecti
 
     if current_tab == "text":
         if text_path:
-            yield from summarize_workflow(text_path, theme, objective, mandatory_rules, context_files, summarizer_type)
+            # Pass manual_drive_id if provided
+            yield from summarize_workflow(text_path, theme, objective, mandatory_rules, context_files, summarizer_type, drive_folder_id=manual_drive_id)
         else:
              yield "Error: No text file provided (Check Text Source tab).", ""
 
@@ -49,7 +51,7 @@ def create_interface():
             with gr.Column():
                 (active_tab, audio_input, subject_input, text_file_input,
                  theme_input, objective_input, mandatory_rules_input, context_files_input,
-                 summarizer_selector, auto_summarize, action_btn, stop_btn) = create_input_components()
+                 summarizer_selector, auto_summarize, action_btn, stop_btn, manual_drive_input) = create_input_components()
 
             # Right Column: Results & Resume Viewer
             with gr.Column():
@@ -74,7 +76,7 @@ def create_interface():
         process_event = action_btn.click(
             fn=unified_workflow,
             inputs=[active_tab, audio_input, text_file_input, subject_input, theme_input, objective_input, mandatory_rules_input, auto_summarize,
-                    context_files_input, summarizer_selector],
+                    context_files_input, summarizer_selector, manual_drive_input],
             outputs=[log_output, summary_output]
         )
         stop_btn.click(fn=None, inputs=None, outputs=None, cancels=[process_event])

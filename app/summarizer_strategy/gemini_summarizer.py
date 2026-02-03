@@ -14,6 +14,7 @@ class GeminiStrategy(SummarizerStrategy):
     objective: str
     mandatory_rules: Optional[str] = None
     context_files: Optional[List[str]] = None
+    drive_custom_folder_id: Optional[str] = None
     model_name: str = "models/gemini-2.5-pro"
     _is_transcription_and_summarize_process = False
 
@@ -150,7 +151,12 @@ class GeminiStrategy(SummarizerStrategy):
                 yield "log", "Uploading to Google Drive..."
 
                 # Upload HTML
-                drive_link_html, error_html = drive_service.upload_file(html_path)
+                drive_link_html, error_html = drive_service.upload_file(
+                    html_path,
+                    custom_folder_id=self.drive_custom_folder_id,
+                    subfolder_name=self.theme,
+                    fixed_subfolder="resumes"
+                )
                 if error_html:
                     yield "log", f"Drive Upload Warning (HTML): {error_html}"
                 else:
@@ -158,7 +164,12 @@ class GeminiStrategy(SummarizerStrategy):
 
                 # Upload PDF
                 if pdf_path and os.path.exists(pdf_path):
-                     drive_link_pdf, error_pdf = drive_service.upload_file(pdf_path)
+                     drive_link_pdf, error_pdf = drive_service.upload_file(
+                         pdf_path,
+                         custom_folder_id=self.drive_custom_folder_id,
+                         subfolder_name=self.theme,
+                         fixed_subfolder="resumes"
+                     )
                      if error_pdf:
                          yield "log", f"Drive Upload Warning (PDF): {error_pdf}"
                      else:
@@ -181,11 +192,20 @@ class GeminiStrategy(SummarizerStrategy):
         resumes_dir = os.path.join(subject_dir, "resumes")
 
         if not self._is_transcription_and_summarize_process:
-             resumes_dir = os.path.join(
-                "transcriptions",
-                "other_resumes",
-                self.theme.replace(" ", "_")
-            )
+             # Logic change: If drive_custom_folder_id (custom "Destination Folder") is set, use it as the local folder.
+             # Otherwise, fallback to 'other_resumes/[Theme]'.
+             if self.drive_custom_folder_id:
+                 resumes_dir = os.path.join(
+                    "transcriptions",
+                    self.drive_custom_folder_id,
+                    "resumes"
+                 )
+             else:
+                 resumes_dir = os.path.join(
+                    "transcriptions",
+                    "other_resumes",
+                    self.theme.replace(" ", "_")
+                )
 
         os.makedirs(resumes_dir, exist_ok=True)
         return os.path.join(resumes_dir, filename)

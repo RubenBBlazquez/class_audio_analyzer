@@ -210,3 +210,4 @@ __marimo__/
 app/transcriptions/
 app/config/audio_analyzer.db
 resumes/
+app/config/drive_service_account.json

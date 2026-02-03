@@ -12,3 +12,6 @@ markdown2
 weasyprint
 google-genai
 pypdf
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

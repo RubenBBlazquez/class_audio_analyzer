@@ -3,8 +3,10 @@ from pydantic.dataclasses import dataclass
 from pydantic import ConfigDict
 import os
 from google import genai
+from weasyprint import HTML
 from .base_summarizer import SummarizerStrategy
 from app.utils.file_processing import extract_text_from_file
+from app.services.drive_service import DriveService
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class GeminiStrategy(SummarizerStrategy):
@@ -132,6 +134,36 @@ class GeminiStrategy(SummarizerStrategy):
                 f.write(html_content)
 
             yield "log", f"Saved HTML to: {html_path}"
+
+            # --- GENERATE PDF ---
+            pdf_path = html_path.replace(".html", ".pdf")
+            try:
+                HTML(string=html_content).write_pdf(pdf_path)
+                yield "log", f"Generated PDF: {pdf_path}"
+            except Exception as pdf_err:
+                yield "log", f"PDF Generation Error: {pdf_err}"
+                pdf_path = None
+
+            # --- GOOGLE DRIVE UPLOAD INTEGRATION ---
+            drive_service = DriveService()
+            if drive_service.enabled:
+                yield "log", "Uploading to Google Drive..."
+
+                # Upload HTML
+                drive_link_html, error_html = drive_service.upload_file(html_path)
+                if error_html:
+                    yield "log", f"Drive Upload Warning (HTML): {error_html}"
+                else:
+                    yield "log", f"Uploaded HTML to Drive: {drive_link_html}"
+
+                # Upload PDF
+                if pdf_path and os.path.exists(pdf_path):
+                     drive_link_pdf, error_pdf = drive_service.upload_file(pdf_path)
+                     if error_pdf:
+                         yield "log", f"Drive Upload Warning (PDF): {error_pdf}"
+                     else:
+                         yield "log", f"Uploaded PDF to Drive: {drive_link_pdf}"
+            # ---------------------------------------
 
             # Optionally, we can also try to generate a PDF from this HTML if needed,
             # but user specifically asked to try HTML format.

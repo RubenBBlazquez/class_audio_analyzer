@@ -11,3 +11,4 @@ gradio
 markdown2
 weasyprint
 google-genai
+pypdf

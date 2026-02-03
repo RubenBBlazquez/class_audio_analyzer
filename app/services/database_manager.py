@@ -143,6 +143,11 @@ def get_transcription_details(record_str):
         cursor.execute("SELECT * FROM summarizations WHERE transcription_id=? ORDER BY created_at DESC LIMIT 1", (record_id,))
         s_row = cursor.fetchone()
 
+        # Capture columns while cursor is open
+        s_columns = []
+        if s_row:
+             s_columns = [description[0] for description in cursor.description]
+
         conn.close()
 
         # Structure: (audio_path, subject, theme, objective, summary_text)
@@ -161,20 +166,7 @@ def get_transcription_details(record_str):
             summary = ""
             mandatory_rules = ""
             if s_row:
-                # s_row structure is id, transcription_id, theme, objective, mandatory_rules, summary_text, created_at
-                # But wait, I changed the CREATE TABLE, but s_row depends on SELECT *
-                # Since I'm doing SELECT *, I should rely on column names or specific indices matching the table schema.
-                # However, if existing rows don't have mandatory_rules, retrieving them might be tricky if I rely on indices and the order changed or if using row_factory.
-                # SQLite usually appends new columns at the end when using ALTER TABLE.
-                # So existing columns indices are preserved. mandatory_rules will be at the end (before or after existing cols depending on when I added it relative to others?)
-                # Actually, I added it in CREATE TABLE between objective and summary_text, but ALTER TABLE adds to the end.
-                # So for new table: id, t_id, theme, obj, mandatory, summary, created
-                # For altered table: id, t_id, theme, obj, summary, created, mandatory
-
-                # To be safe, I should select by name or handle indices carefully.
-                # Let's check column names.
-                columns = [description[0] for description in cursor.description]
-                s_dict = dict(zip(columns, s_row))
+                s_dict = dict(zip(s_columns, s_row))
 
                 theme = s_dict.get('theme', "")
                 objective = s_dict.get('objective', "")

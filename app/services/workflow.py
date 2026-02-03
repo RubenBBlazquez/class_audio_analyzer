@@ -81,9 +81,9 @@ def transcribe_workflow(audio_path, subject, theme, objective, mandatory_rules, 
     try:
         context_paths = [f.name for f in context_files] if context_files else None
 
-        if summarizer_type == "Gemini Pro":
+        if summarizer_type == "Gemini Pro 3":
             summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-pro")
-        elif summarizer_type == "Gemini Flash":
+        elif summarizer_type == "Gemini Flash 3":
              summarizer = GeminiStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths, model_name="models/gemini-2.5-flash")
         else:
             summarizer = OpenAIStrategy(theme=theme, objective=objective, mandatory_rules=mandatory_rules, context_files=context_paths)

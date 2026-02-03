@@ -21,7 +21,7 @@ def create_input_components():
 
             # Wrapper for context files and strategy selector
             with gr.Row():
-                context_files_input = gr.File(label="Context Files (Optional)", file_count="multiple", scale=3)
+                context_files_input = gr.File(label="Context Files (Optional)", file_count="multiple", scale=3, file_types=[".txt", ".pdf"])
                 with gr.Column(elem_classes="strategy-selector-container", scale=1):
                     summarizer_selector = gr.Dropdown(
                         choices=["OpenAI Assistant", "Gemini Pro 3", "Gemini Flash 3"],

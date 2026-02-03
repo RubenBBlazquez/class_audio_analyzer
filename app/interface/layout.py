@@ -27,7 +27,18 @@ def unified_workflow(current_tab, audio_path, text_path, subject, theme, objecti
     yield f"Error: Unknown tab state '{current_tab}'.", ""
 
 def create_interface():
-    with gr.Blocks(title="Class Audio Analyzer", css=CSS) as app:
+    # Force dark mode
+    js = """
+    function() {
+        document.body.classList.add('dark');
+        const url = new URL(window.location);
+        if (url.searchParams.get('__theme') !== 'dark') {
+            url.searchParams.set('__theme', 'dark');
+            window.history.replaceState(null, '', url);
+        }
+    }
+    """
+    with gr.Blocks(title="Class Audio Analyzer", css=CSS, js=js) as app:
         gr.Markdown("# Class Audio Analyzer & Summarizer")
 
         # History Section

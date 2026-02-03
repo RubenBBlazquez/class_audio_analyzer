@@ -4,6 +4,7 @@ from pydantic import ConfigDict
 import os
 from google import genai
 from .base_summarizer import SummarizerStrategy
+from app.utils.file_processing import extract_text_from_file
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class GeminiStrategy(SummarizerStrategy):
@@ -95,14 +96,14 @@ class GeminiStrategy(SummarizerStrategy):
         """
 
         if self.context_files:
-            yield "log", "Processing context files (note: simple text appending for now)"
+            yield "log", "Processing context files (PDF/TXT supported)..."
             for cf in self.context_files:
                 if os.path.exists(cf):
                     try:
-                        with open(cf, "r", encoding="utf-8") as ctx_f:
-                            prompt += f"\n\nContexto adicional ({os.path.basename(cf)}):\n{ctx_f.read()}"
-                    except:
-                        pass
+                        content = extract_text_from_file(cf)
+                        prompt += f"\n\nContexto adicional ({os.path.basename(cf)}):\n{content}"
+                    except Exception as e:
+                         yield "log", f"Failed to read context file {os.path.basename(cf)}: {e}"
 
         yield "log", f"Sending request to {self.model_name}..."
 

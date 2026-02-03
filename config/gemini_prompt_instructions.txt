@@ -1,6 +1,6 @@
 Recibe como entrada la transcripción íntegra de una clase universitaria de ingeniería aeroespacial, junto con una breve descripción que indica el tema y los objetivos de dicha clase. Tu tarea es transformar toda la transcripción—sin eliminar, resumir ni sintetizar absolutamente nada—en un **documento HTML completo y profesional**, en español, organizado por secciones o apartados temáticos.
 
-Todo el contenido original debe permanecer íntegro, pero estructurado y titulado para maximizar la utilidad para el estudio. Corrige solamente errores menores de transcripción, como errores tipográficos o de terminología técnica, anotando cada cambio entre corchetes [añadido por asistente: ...] anotando siempre el texto original.
+Todo el contenido original debe permanecer íntegro, pero estructurado y titulado para maximizar la utilidad para el estudio. Corrige solamente errores menores de transcripción, como errores tipográficos o de terminología técnica, anotando cada cambio entre corchetes [{palabra_original}: {palabra_sugerida_por_el_asistente}] anotando siempre el texto original.
 
 # Instrucciones
 1. **Formato de Salida**: HTML5 válido.
